@@ -1,0 +1,329 @@
+{
+  "name": "AI Lead Responder – Clinic",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the friendly front-desk assistant for Bright Smile Dental. A patient just sent an enquiry through our website.\n\nName: {{ $json.Name }}\nService: {{ $json.Service }}\nMessage: {{ $json.Message }}\n\n1. Rate the lead:\n- Hot = in pain, an emergency, or wants an appointment soon\n- Warm = interested in a treatment but no timing\n- Cold = vague, spam, or unrelated\n\n2. Write a short, warm email reply (under 120 words) using their first name. Acknowledge what they asked for. If they mention pain or an emergency, ask them to call us on (555) 010-2024 for a same-day slot. Otherwise invite them to reply with 2–3 days and times that suit them. Sign off as \"The Bright Smile Dental Team\".\n\nRules: never give medical advice or diagnoses, never quote prices, never confirm a specific appointment time, and never make up facts about the clinic.",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": []
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        224,
+        0
+      ],
+      "id": "ff647172-3291-424e-be8b-073a9ddb19e6",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"lead_score\": \"Hot\",\n  \"email_subject\": \"Re: Your appointment request\",\n  \"email_reply\": \"Hi Sarah, thank you for reaching out...\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        208
+      ],
+      "id": "fdfedd06-44e4-4f7e-90c7-f472134a3451",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        112,
+        208
+      ],
+      "id": "eeb3842f-e2ee-4e09-970a-26fc89eead3d",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Lead Data').item.json.Email }}",
+        "subject": "={{ $json.output.email_subject }}",
+        "message": "={{ $json.output.email_reply.replace(/\\n/g, '<br>') }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Bright Smile Dental"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "3637699d-942b-46cf-9c3b-947c2ba56b29",
+      "name": "Send a message"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now.toFormat('yyyy-MM-dd HH:mm') }}",
+            "Name": "={{ $('Lead Data').item.json.Name }}",
+            "Email": "={{ $('Lead Data').item.json.Email }}",
+            "Message": "={{ $('Lead Data').item.json.Message }}",
+            "Lead Score": "={{ $('Basic LLM Chain').item.json.output.lead_score }}",
+            "AI Reply": "={{ $('Basic LLM Chain').item.json.output.email_reply.replace(/\\n+/g, ' ') }}",
+            "Service": "={{ $('Lead Data').item.json.Service }}",
+            "Phone": "={{ $('Lead Data').item.json.Phone }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Lead Score",
+              "displayName": "Lead Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Reply",
+              "displayName": "AI Reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        816,
+        0
+      ],
+      "id": "022578ab-f6d7-4f35-9424-b65b2883fa65",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "=bright-smile-lead",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        -256,
+        0
+      ],
+      "id": "859e868b-438f-4cb6-ba71-4d23e719e01b",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b167eb7a-921c-423a-8457-c236be98445f",
+              "name": "=Name",
+              "value": "={{ $json.body.Name }}",
+              "type": "string"
+            },
+            {
+              "id": "9e54e110-cc90-4663-a4ac-a52736f7d10b",
+              "name": "=Email",
+              "value": "={{ $json.body.Email }}",
+              "type": "string"
+            },
+            {
+              "id": "9c058a2b-0649-43c7-84ef-325182ad59ea",
+              "name": "=Phone",
+              "value": "={{ $json.body.Phone }}",
+              "type": "string"
+            },
+            {
+              "id": "2e725175-4f64-48f4-a713-7f7d6c9bfb40",
+              "name": "=Service",
+              "value": "={{ $json.body.Service }}",
+              "type": "string"
+            },
+            {
+              "id": "8a8c1ce7-b925-4f11-b695-f20436e88b11",
+              "name": "=Message",
+              "value": "={{ $json.body.Message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "78b97564-bfa1-4cf4-8457-4756aa6e1383",
+      "name": "Lead Data"
+    }
+  ],
+  "connections": {
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}

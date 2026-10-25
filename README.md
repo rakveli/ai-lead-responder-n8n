@@ -4,7 +4,7 @@ An AI system that replies to every website enquiry within seconds, rates how urg
 
 Built with **n8n**, **Google Gemini**, **Gmail** and **Google Sheets**. Demonstrated here for a fictional dental clinic, *Bright Smile Dental*.
 
-▶️ **Demo video:** [Watch on YouTube](YOUR_YOUTUBE_LINK)
+▶️ **Demo video:** [Watch on YouTube](https://youtu.be/xcOmfqDCP8k)
 
 ---
 
